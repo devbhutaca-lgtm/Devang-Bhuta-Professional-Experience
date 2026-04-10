@@ -1,7 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from './firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import AdminDashboard from './components/AdminDashboard';
 import { 
   Github, 
   Linkedin, 
@@ -315,9 +316,9 @@ const ContactForm = () => {
     e.preventDefault();
     setStatus('submitting');
     try {
-      await addDoc(collection(db, 'contactMessages'), {
+      await addDoc(collection(db, 'ContactMessage'), {
         ...formData,
-        createdAt: new Date().toISOString()
+        timestamp: serverTimestamp()
       });
       setFormData({ name: '', email: '', message: '' });
       setStatus('success');
@@ -380,6 +381,30 @@ const ContactForm = () => {
 };
 
 export default function App() {
+  const [view, setView] = useState<'portfolio' | 'admin'>('portfolio');
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#admin') {
+        setView('admin');
+      } else {
+        setView('portfolio');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Check on initial load
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  if (view === 'admin') {
+    return <AdminDashboard onBack={() => {
+      window.location.hash = '';
+      setView('portfolio');
+    }} />;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
